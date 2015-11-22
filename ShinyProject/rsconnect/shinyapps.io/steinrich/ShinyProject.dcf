@@ -1,0 +1,8 @@
+name: ShinyProject
+account: steinrich
+server: shinyapps.io
+bundleId: 312623
+url: https://steinrich.shinyapps.io/ShinyProject
+when: 1447771999.17212
+asMultiple: FALSE
+asStatic: FALSE
