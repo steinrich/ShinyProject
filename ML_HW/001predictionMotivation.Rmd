@@ -1,0 +1,84 @@
+---
+title: "Practical_ML"
+author: "Steinrich"
+date: "November 21, 2015"
+output: html_document
+---
+Loading Data
+```{r,echo=FALSE}
+training<-read.csv("pml-training.csv")
+attach(training)
+testing<-read.csv("pml-testing.csv")
+set.seed(112345)
+```
+Exploratory Analysis
+Print dimensions of both trainig & dataset
+```{r,echo=TRUE}
+dim(training)
+dim(testing)
+#colSelection<- c("kurtosis_yaw_belt","min_yaw_dumbbell", "max_picth_forearm","var_yaw_forearm")
+#featurePlot(x=training[,colSelection],y = training$classe,plot="pairs") 
+```
+Preprocessing
+1.Remove the first 7 that are not the barbell lifts activites
+2.Remove columns which include 0
+3.Remove columns with factors, as many tree-typed algo cannot deal with factors as inputs 
+4.Training dataset is reduced to 53 features as result
+```{r, echo=FALSE}
+training<-training[,-c(1,2,3,4,5,6,7)]       #Remove the first 7 that are not the barbell lifts activites
+training <-training[,colSums(is.na(training))==0] #Remove the columns which include 0 
+col_names <- c()
+n <- ncol(training)-1                        #Find out the columns which are factors
+for (i in 1:n) {
+  if (is.factor(training[,i])){
+    col_names <- c(col_names,i)
+  }
+}                                            
+training <- training[,-col_names]            #Remove the columns which are factors
+dim(training)
+```
+Start to train the model by using three different methodologies
+
+Methodology1: Boost
+
+Train the model with shrinkage rate=0.05, cross-validation fold=5
+then calculate Cross-validation error rate
+
+```{r, echo=TRUE}
+library(gbm)
+modelFit3<-gbm(classe~.,data=training,shrinkage=0.05,cv.folds=5)
+best.iter<-gbm.perf(modelFit3,method="cv")
+pred3<-predict(modelFit3,testing,type='response')
+```
+Plot best iterations and Calculate cross-validation error using cv.error function
+```{r, echo=FALSE}
+boost_error<-mean(modelFit3$cv.error)
+print(boost_error)
+```
+
+Methodology2: Random Forest
+```{r, echo=TRUE}
+library(randomForest)
+modelFit<-randomForest(classe ~., data = training)   #Train the model
+pred<-predict(modelFit,testing)         #Apply the model to testing set
+```
+error of Random Forest 
+```{r, echo=FALSE}
+RFerror<-mean(modelFit$err.rate)
+print(RFerror)
+```
+
+Methodology3: Rpart
+```{r, echo=TRUE}
+library(rpart)
+modelFit2<-rpart(classe~.,data=training) #Train the model
+pred2<-predict(modelFit2,testing)      #Apply the model to testing set 
+printcp(modelFit2)                 
+```
+error of Rpar is 0.34148*0.71563=0.24437
+
+By comparing the error of cross-validation on three methodologies above, we decide to use Random Forest
+```{r, echo=FALSE}
+print(pred)
+```
+
